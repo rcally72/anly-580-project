@@ -88,12 +88,27 @@ big_regex="|".join(regexes)
 # expressions like [A-Z] will match lowercase letters, too. 
 my_extensible_tokenizer = re.compile(big_regex, re.VERBOSE | re.I | re.UNICODE)
 
+url_pattern = (
+# URL, e.g. https://google.com
+# This pattern will match any url.  
+r'(https?:\/\/(?:www\.',
+r'(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
+r'www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
+r'https?:\/\/(?:www\.',
+r'(?!www))[a-zA-Z0-9]+\.[^\s]{2,}',
+r'www\.[a-zA-Z0-9]+\.[^\s]{2,})',
+)
+big_url_pattern = "|".join(url_pattern)
+url_tokenizer = re.compile(big_url_pattern, re.VERBOSE | re.I | re.UNICODE)
+
 temp = []
 for text in data.values:
     for matches in my_extensible_tokenizer.findall(text[0]):
-        if matches != '': # just in case get empty matches
+        # determine if matches is a url.  
+        url_matches = url_tokenizer.findall(matches)
+        # if the match is a url, then won't add to temp.  
+        if not url_matches:
             temp.append(matches)
-
 
 
 
