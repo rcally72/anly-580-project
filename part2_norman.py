@@ -2,9 +2,9 @@ import re
 import pandas as pd 
 
 
-data = pd.read_csv("Dev/INPUT.txt", sep='\t', header=None, 
+data = pd.read_csv("Gold/dev.txt", sep='\t', header=None, 
                    names=['id', 'target', 'tweet'], encoding='utf-8')
-data.drop(['id', 'target'], axis=1, inplace=True)
+data.drop(['id',], axis=1, inplace=True)
 
 
 
@@ -66,15 +66,16 @@ url_tokenizer = re.compile(big_url_pattern, re.VERBOSE | re.I | re.UNICODE)
 
 temp = []
 for text in data.values:
-    for matches in my_extensible_tokenizer.findall(text[0]):
+    for matches in my_extensible_tokenizer.findall(text[1]):
         # determine if matches is a url.  
         url_matches = url_tokenizer.findall(matches)
         # if the match is a url, then won't add to temp.  
         if not url_matches:
-            temp.append(matches)
+            temp.append((matches, text[0]))
             
-            
-            
+
+
+    
 
 
 
