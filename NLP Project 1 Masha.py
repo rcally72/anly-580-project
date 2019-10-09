@@ -21,9 +21,11 @@ from nltk.classify import NaiveBayesClassifier
 from nltk.sentiment import SentimentAnalyzer
 
 
+
 import nltk 
 from nltk import pos_tag
 from nltk.corpus import stopwords 
+#nltk.download('averaged_perceptron_tagger')
 
 
 data_dev = pd.read_csv("Gold/dev.txt", sep='\t', header=None, index_col=False,
@@ -37,6 +39,8 @@ data_train.drop(['id'], axis=1, inplace=True)
 data_devtest = pd.read_csv("Gold/devtest.txt", sep='\t', header=None, index_col=False,
                            names=['id', 'target', 'tweet'], encoding='utf-8')
 data_devtest.drop(['id'], axis=1, inplace=True)
+#data_devtest.loc[1,'tweet'] = "@PersonaSoda well yeah, that's third parties. Sony itself isn't putting out actual games for it. It's got 1-2 yrs of 3rd party support left."
+#data_devtest.loc[1,'target'] = 'neutral'
 
 data_test = pd.read_csv("Gold/test.txt", sep='\t', header=None, index_col=False,
                            names=['id', 'target', 'tweet'], encoding='utf-8')
@@ -44,7 +48,9 @@ data_test.drop(['id'], axis=1, inplace=True)
 
 
 regexes=(
-
+# Keep usernames together (any token starting with @, followed by A-Z, a-z, 0-9)        
+r"(?:@[\w_]+)"
+  
 # Keep hashtags together (any token starting with #, followed by A-Z, a-z, 0-9, _, or -)
 r"(?:\#+[\w_]+[\w\'_\-]*[\w_]+)",
 
@@ -54,12 +60,21 @@ r'[A-Za-z]\.(?:[A-Za-z0-9]\.)+',
 r'[A-Z][bcdfghj-np-tvxz]+\.',
 
 # URL, e.g. https://google.com
-r'https?:\/\/(?:www\.',
-r'(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
-r'www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
-r'https?:\/\/(?:www\.',
-r'(?!www))[a-zA-Z0-9]+\.[^\s]{2,}',
-r'www\.[a-zA-Z0-9]+\.[^\s]{2,}',
+#r'https?:\/\/(?:www\.',
+#r'(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
+#r'www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
+#r'https?:\/\/(?:www\.',
+#r'(?!www))[a-zA-Z0-9]+\.[^\s]{2,}',
+#r'www\.[a-zA-Z0-9]+\.[^\s]{2,}',
+  
+r'https?:\/\/w{0,3}\.?[a-zA-Z0-9-]+\.[a-zA-Z0-9]{1,6}\/?[a-zA-Z0-9\/=]*\s*',
+r'w{3}\.[a-zA-Z0-9]+\.[a-zA-Z0-9\/=]+\s*',
+r'w{0:3}\.?[a-zA-Z0-9]+\.[a-zA-Z0-9\/=]+\/+[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.com\/?[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.edu\/?[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.gov\/?[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.org\/?[a-zA-Z0-9\/=]*\s*',
+
 
 # currency and percentages, e.g. $12.40, 82%
 r'\$?\d+(?:\.\d+)?%?',
@@ -86,13 +101,23 @@ my_extensible_tokenizer = re.compile(big_regex, re.VERBOSE | re.I | re.UNICODE)
 url_pattern = (
 # URL, e.g. https://google.com
 # This pattern will match any url.  
-r'(https?:\/\/(?:www\.',
-r'(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
-r'www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
-r'https?:\/\/(?:www\.',
-r'(?!www))[a-zA-Z0-9]+\.[^\s]{2,}',
-r'www\.[a-zA-Z0-9]+\.[^\s]{2,})',
+#r'(https?:\/\/(?:www\.',
+#r'(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
+#r'www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}',
+#r'https?:\/\/(?:www\.',
+#r'(?!www))[a-zA-Z0-9]+\.[^\s]{2,}',
+#r'www\.[a-zA-Z0-9]+\.[^\s]{2,})',
 
+r'https?:\/\/w{0,3}\.?[a-zA-Z0-9-]+\.[a-zA-Z0-9]{1,6}\/?[a-zA-Z0-9\/=]*\s*',
+r'w{3}\.[a-zA-Z0-9]+\.[a-zA-Z0-9\/=]+\s*',
+r'w{0:3}\.?[a-zA-Z0-9]+\.[a-zA-Z0-9\/=]+\/+[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.com\/?[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.edu\/?[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.gov\/?[a-zA-Z0-9\/=]*\s*',
+r'[a-zA-Z0-9]+\.org\/?[a-zA-Z0-9\/=]*\s*',
+
+  
+  
 # Numbers i.e. 123,56.34
 r'(?:[0-9]+[,]?)+(?:[.][0-9]+)?',
 
