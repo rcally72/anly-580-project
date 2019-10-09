@@ -106,7 +106,7 @@ training_features = train_tokens + dev_tokens
 sentiment_analyzer = SentimentAnalyzer()
 trainer = NaiveBayesClassifier.train
 classifier = sentiment_analyzer.train(trainer=trainer, training_set=training_features)
-
+    
 # Evaluating model on training data.
 sentiment_analyzer.evaluate(training_features, classifier)
 
