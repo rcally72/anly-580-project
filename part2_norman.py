@@ -77,64 +77,51 @@ r'www\.[a-zA-Z0-9]+\.[^\s]{2,})',
 big_url_pattern = "|".join(url_pattern)
 url_tokenizer = re.compile(big_url_pattern, re.VERBOSE | re.I | re.UNICODE)
 
-
-dev_tokens = [] # stores all features for dev dataset.  
-for text in data_dev.values: # for each tweet.  
-    temp = []  # stores the matches for a single tweet
-    for matches in my_extensible_tokenizer.findall(text[1]):
-        # determine if matches is a url.  
-        url_matches = url_tokenizer.findall(matches)
-        # if the match is a url, then won't add to temp.  
-        if not url_matches:
-            temp.append(('contains(' + matches + ')', True))
-        dev_tokens.append((dict(temp), text[0]))
-
-train_tokens = [] # stores all features for train dataset.  
-for text in data_train.values: # for each tweet.  
-    temp = [] # stores tokens for a given tweet.  
-    for matches in my_extensible_tokenizer.findall(text[1]):
-        # determine if matches is a url.  
-        url_matches = url_tokenizer.findall(matches)
-        # if the match is a url, then won't add to temp.  
-        if not url_matches:
-            temp.append(('contains(' + matches + ')', True))
-        train_tokens.append((dict(temp), text[0]))
+hashtag_pattern = (
+r"(?:\#+[\w_]+[\w\'_\-]*[\w_]+)"        
+)
+hashtag_tokenizer = re.compile(hashtag_pattern, re.VERBOSE | re.I | re.UNICODE)
 
 
+def preprocessing(data):
+    tokens = [] # stores all features for dataset.  
+    for text in data.values: # for each tweet.  
+        temp = []  # stores the matches for a single tweet
+        for matches in my_extensible_tokenizer.findall(text[1]):
+            # determine if matches is a url.  
+            url_matches = url_tokenizer.findall(matches)
+            hashtag_matches = hashtag_tokenizer.findall(matches)
+            # if the match is a url, then won't add to temp.  
+            if url_matches:
+                temp.append(('url_flag', True))
+                temp.append(('url_count', len(url_matches)))
+                temp.append(('url_count_2', len(url_matches)**3))
+                
+            if hashtag_matches:
+                temp.append(('hashtag_flag', True))
+                temp.append(('hashtag_flag', len(hashtag_matches)))
+                temp.append(('hashtag_flag_2', len(hashtag_matches)**2))
+                
+            if not url_matches:
+                temp.append(('contains(' + matches + ')', True))
+            temp.append(('url_hashtag_interaction',
+                         len(url_matches)*len(hashtag_matches)))
+        tokens.append((dict(temp), text[0]))
+    return tokens
+
+train_tokens = preprocessing(data_train)
+dev_tokens = preprocessing(data_dev)
 training_features = train_tokens + dev_tokens
 
 sentiment_analyzer = SentimentAnalyzer()
 trainer = NaiveBayesClassifier.train
 classifier = sentiment_analyzer.train(trainer=trainer, training_set=training_features)
-    
 # Evaluating model on training data.
 sentiment_analyzer.evaluate(training_features, classifier)
 
-
-devtest_tokens = [] # stores all features for devtest dataset.  
-for text in data_devtest.values: # for each tweet.  
-    temp = []  # stores the matches for a single tweet
-    for matches in my_extensible_tokenizer.findall(text[1]):
-        # determine if matches is a url.  
-        url_matches = url_tokenizer.findall(matches)
-        # if the match is a url, then won't add to temp.  
-        if not url_matches:
-            temp.append(('contains(' + matches + ')', True))
-        devtest_tokens.append((dict(temp), text[0]))
-
-test_tokens = [] # stores all features for train dataset.  
-for text in data_test.values: # for each tweet.  
-    temp = [] # stores tokens for a given tweet.  
-    for matches in my_extensible_tokenizer.findall(text[1]):
-        # determine if matches is a url.  
-        url_matches = url_tokenizer.findall(matches)
-        # if the match is a url, then won't add to temp.  
-        if not url_matches:
-            temp.append(('contains(' + matches + ')', True))
-        test_tokens.append((dict(temp), text[0]))
-
+devtest_tokens = preprocessing(data_devtest)
+test_tokens = preprocessing(data_test)
 test_final = devtest_tokens + test_tokens
-
 sentiment_analyzer.evaluate(test_final, classifier)
 
 
